@@ -7,6 +7,8 @@ export const ZRecipientWithSigningUrlSchema = RecipientSchema.pick({
   id: true,
   name: true,
   email: true,
+  identityType: true,
+  phone: true,
   token: true,
   role: true,
   signingOrder: true,

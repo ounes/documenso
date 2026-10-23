@@ -62,6 +62,8 @@ export const distributeEnvelopeRoute = authenticatedProcedure
         id: recipient.id,
         name: recipient.name,
         email: recipient.email,
+        identityType: recipient.identityType,
+        phone: recipient.phone,
         token: recipient.token,
         role: recipient.role,
         signingOrder: recipient.signingOrder,
