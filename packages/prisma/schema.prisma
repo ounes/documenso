@@ -643,10 +643,17 @@ enum RecipientRole {
 }
 
 /// @zod.import(["import { ZRecipientAuthOptionsSchema } from '@documenso/lib/types/document-auth';"])
+enum IdentityType {
+  EMAIL
+  PHONE
+}
+
 model Recipient {
   id                   Int           @id @default(autoincrement())
   envelopeId           String
   email                String        @db.VarChar(255)
+  identityType         IdentityType  @default(EMAIL)
+  phone                String?       @db.VarChar(32)
   name                 String        @default("") @db.VarChar(255)
   token                String
   documentDeletedAt    DateTime?
