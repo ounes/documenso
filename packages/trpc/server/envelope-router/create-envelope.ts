@@ -143,6 +143,8 @@ export const createEnvelopeRouteCaller = async ({
 
   const recipientsToCreate = recipients?.map((recipient) => ({
     email: recipient.email,
+    identityType: recipient.identityType,
+    phone: recipient.phone,
     name: recipient.name,
     role: recipient.role,
     signingOrder: recipient.signingOrder,

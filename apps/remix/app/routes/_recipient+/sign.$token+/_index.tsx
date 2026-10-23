@@ -12,6 +12,7 @@ import { IS_INSTANCE_CSC_MODE } from '@documenso/lib/constants/app';
 import { AppError, AppErrorCode } from '@documenso/lib/errors/app-error';
 import { loadRecipientBrandingByTeamId } from '@documenso/lib/server-only/branding/load-recipient-branding';
 import { getDocumentAndSenderByToken } from '@documenso/lib/server-only/document/get-document-by-token';
+import { isPhoneSigningAllowedForRecipient } from '@documenso/lib/server-only/document/phone-signing';
 import { viewedDocument } from '@documenso/lib/server-only/document/viewed-document';
 import { getEnvelopeForRecipientSigning } from '@documenso/lib/server-only/envelope/get-envelope-for-recipient-signing';
 import { getEnvelopeRequiredAccessData } from '@documenso/lib/server-only/envelope/get-envelope-required-access-data';
@@ -177,6 +178,7 @@ const handleV1Loader = async ({ params, request }: Route.LoaderArgs) => {
     completedFields,
     recipientSignature,
     isRecipientsTurn,
+    phoneSigningEnabled: isPhoneSigningAllowedForRecipient({ envelope: document, recipient }),
     includeSenderDetails: settings.includeSenderDetails,
     branding: {
       brandingEnabled: settings.brandingEnabled,
@@ -437,6 +439,7 @@ const SigningPageV1 = ({ data }: { data: Awaited<ReturnType<typeof handleV1Loade
     completedFields,
     recipientSignature,
     isRecipientsTurn,
+    phoneSigningEnabled,
     allRecipients,
     nextRecipient,
     includeSenderDetails,
@@ -510,6 +513,7 @@ const SigningPageV1 = ({ data }: { data: Awaited<ReturnType<typeof handleV1Loade
             fields={fields}
             completedFields={completedFields}
             isRecipientsTurn={isRecipientsTurn}
+            phoneSigningEnabled={phoneSigningEnabled}
             allRecipients={allRecipients}
             nextRecipient={nextRecipient ?? undefined}
             includeSenderDetails={includeSenderDetails}

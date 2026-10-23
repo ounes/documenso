@@ -185,6 +185,11 @@ const ZBaseFieldEventDataSchema = z.object({
 
 const ZBaseRecipientDataSchema = z.object({
   recipientEmail: z.string(),
+  /**
+   * Phone number of recipients identified by phone rather than email.
+   * Absent for email recipients and for historical audit log entries.
+   */
+  recipientPhone: z.string().optional(),
   recipientName: z.string(),
   recipientId: z.number(),
   recipientRole: z.string(),

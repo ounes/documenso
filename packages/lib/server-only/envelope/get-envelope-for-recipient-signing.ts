@@ -16,6 +16,7 @@ import { isTspEnvelope } from '../../types/signature-level';
 import { isRecipientTurnBySigningOrder } from '../../utils/recipient-groups';
 import { isRecipientExpired } from '../../utils/recipients';
 import { isRecipientAuthorized } from '../document/is-recipient-authorized';
+import { isPhoneSigningAllowedForRecipient } from '../document/phone-signing';
 import { getTeamSettings } from '../team/get-team-settings';
 import { assertSenderNotDisabled } from '../user/assert-user-not-disabled';
 
@@ -58,6 +59,8 @@ export const ZEnvelopeForSigningResponse = z.object({
       role: true,
       signingStatus: true,
       email: true,
+      identityType: true,
+      phone: true,
       name: true,
       documentDeletedAt: true,
       expired: true, //!: deprecated Not in use. To be removed in a future migration.
@@ -107,6 +110,8 @@ export const ZEnvelopeForSigningResponse = z.object({
     sendStatus: true,
     signingStatus: true,
     email: true,
+    identityType: true,
+    phone: true,
     name: true,
     documentDeletedAt: true,
     expiresAt: true,
@@ -136,6 +141,11 @@ export const ZEnvelopeForSigningResponse = z.object({
   isRejected: z.boolean(),
   isExpired: z.boolean(),
   isRecipientsTurn: z.boolean(),
+
+  /**
+   * Server-authoritative gate for the phone signing completion UI.
+   */
+  phoneSigningEnabled: z.boolean(),
 
   sender: z.object({
     email: z.string(),
@@ -284,6 +294,7 @@ export const getEnvelopeForRecipientSigning = async ({
     recipient,
     recipientSignature,
     isRecipientsTurn,
+    phoneSigningEnabled: isPhoneSigningAllowedForRecipient({ envelope, recipient }),
     isCompleted: recipient.signingStatus === SigningStatus.SIGNED || envelope.status === DocumentStatus.COMPLETED,
     isRejected: recipient.signingStatus === SigningStatus.REJECTED || envelope.status === DocumentStatus.REJECTED,
     isExpired: isRecipientExpired(recipient),

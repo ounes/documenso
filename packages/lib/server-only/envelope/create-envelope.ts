@@ -14,6 +14,7 @@ import {
   DocumentSource,
   EnvelopeType,
   FolderType,
+  IdentityType,
   RecipientRole,
   SendStatus,
   SigningStatus,
@@ -57,6 +58,8 @@ type CreateEnvelopeRecipientFieldOptions = TFieldAndMeta & {
 
 type CreateEnvelopeRecipientOptions = {
   email: string;
+  identityType?: IdentityType;
+  phone?: string | null;
   name: string;
   role: RecipientRole;
   signingOrder?: number;
@@ -466,6 +469,8 @@ export const createEnvelope = async ({
             envelopeId: envelope.id,
             name: recipient.name,
             email: recipient.email,
+            identityType: recipient.identityType ?? IdentityType.EMAIL,
+            phone: recipient.phone ?? null,
             role: recipient.role,
             signingOrder: recipient.signingOrder,
             token: nanoid(),

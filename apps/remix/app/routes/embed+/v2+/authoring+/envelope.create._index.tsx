@@ -216,6 +216,8 @@ const EnvelopeCreatePage = ({ embedAuthoringOptions }: EnvelopeCreatePageProps) 
       return {
         email: recipient.email,
         name: recipient.name,
+        identityType: recipient.identityType,
+        phone: recipient.phone ?? undefined,
         role: recipient.role,
         signingOrder: recipient.signingOrder ?? undefined,
         accessAuth: recipient.authOptions?.accessAuth ?? [],
@@ -329,6 +331,8 @@ const EnvelopeCreatePage = ({ embedAuthoringOptions }: EnvelopeCreatePageProps) 
       id: -(index + 1),
       envelopeId: '',
       email: recipient.email,
+      identityType: 'EMAIL',
+      phone: null,
       name: recipient.name,
       role: recipient.role,
       token: '',

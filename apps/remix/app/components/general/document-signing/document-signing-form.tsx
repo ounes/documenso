@@ -31,6 +31,7 @@ export type DocumentSigningFormProps = {
   recipient: Recipient;
   fields: Field[];
   isRecipientsTurn: boolean;
+  phoneSigningEnabled: boolean;
   allRecipients?: RecipientWithFields[];
   setSelectedSignerId?: (id: number | null) => void;
   completeDocument: (options: {
@@ -51,6 +52,7 @@ export const DocumentSigningForm = ({
   recipient,
   fields,
   isRecipientsTurn,
+  phoneSigningEnabled,
   allRecipients = [],
   setSelectedSignerId,
   completeDocument,
@@ -159,6 +161,7 @@ export const DocumentSigningForm = ({
                     completeDocument({ nextSigner, accessAuthOptions })
                   }
                   recipient={recipient}
+                  phoneSigningEnabled={phoneSigningEnabled}
                   allowDictateNextSigner={allowDictateNextSigner}
                   defaultNextSigner={defaultNextSigner}
                 />
@@ -297,6 +300,7 @@ export const DocumentSigningForm = ({
                     })
                   }
                   recipient={recipient}
+                  phoneSigningEnabled={phoneSigningEnabled}
                   allowDictateNextSigner={allowDictateNextSigner}
                   defaultNextSigner={defaultNextSigner}
                 />

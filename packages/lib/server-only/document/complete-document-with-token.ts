@@ -32,6 +32,7 @@ import { getIsRecipientsTurnToSign } from '../recipient/get-is-recipient-turn';
 import { assertSenderNotDisabled } from '../user/assert-user-not-disabled';
 import { triggerWebhook } from '../webhooks/trigger/trigger-webhook';
 import { isRecipientAuthorized } from './is-recipient-authorized';
+import { isPhoneSigningAllowedForRecipient } from './phone-signing';
 
 export type CompleteDocumentWithTokenOptions = {
   token: string;
@@ -154,10 +155,24 @@ export const completeDocumentWithToken = async ({
   }
 
   // Check ACCESS AUTH 2FA validation during document completion
-  const { derivedRecipientAccessAuth } = extractDocumentAuthMethods({
+  const { derivedRecipientAccessAuth, documentAuthOption, recipientAuthOption } = extractDocumentAuthMethods({
     documentAuth: envelope.authOptions,
     recipientAuth: recipient.authOptions,
   });
+
+  const isPhoneSigner = recipient.identityType === 'PHONE';
+
+  if (
+    isPhoneSigner &&
+    (!isPhoneSigningAllowedForRecipient({ envelope, recipient }) ||
+      recipientOverride !== undefined ||
+      dictatedNextSigner !== undefined)
+  ) {
+    throw new AppError(AppErrorCode.INVALID_REQUEST, {
+      message: 'Phone signing is not allowed for this recipient or document',
+      statusCode: 400,
+    });
+  }
 
   if (derivedRecipientAccessAuth.includes(DocumentAuth.TWO_FACTOR_AUTH)) {
     if (!accessAuthOptions) {
@@ -234,7 +249,7 @@ export const completeDocumentWithToken = async ({
   }
 
   // Only trim the email if it's been derived.
-  if (!recipient.email) {
+  if (!isPhoneSigner && !recipient.email) {
     recipientEmail = (
       recipientOverride?.email ||
       fields.find((field) => field.type === FieldType.EMAIL)?.customText ||
@@ -244,7 +259,7 @@ export const completeDocumentWithToken = async ({
       .toLowerCase();
   }
 
-  if (!recipientEmail) {
+  if (!isPhoneSigner && !recipientEmail) {
     throw new AppError(AppErrorCode.INVALID_BODY, {
       message: 'Recipient email is required',
     });
@@ -285,6 +300,7 @@ export const completeDocumentWithToken = async ({
           requestMetadata,
           data: {
             recipientEmail: recipientEmail,
+            ...(isPhoneSigner && recipient.phone ? { recipientPhone: recipient.phone } : {}),
             recipientId: recipient.id,
             recipientName: recipientName,
             recipientRole: recipient.role,
@@ -325,6 +341,14 @@ export const completeDocumentWithToken = async ({
     const { count: updatedRecipientCount } = await tx.recipient.updateMany({
       where: {
         id: recipient.id,
+        ...(isPhoneSigner
+          ? {
+              identityType: 'PHONE',
+              phone: recipient.phone,
+              name: recipient.name,
+              email: recipient.email,
+            }
+          : {}),
         signingStatus: {
           not: SigningStatus.SIGNED,
         },
@@ -341,6 +365,20 @@ export const completeDocumentWithToken = async ({
     // and this transaction. Abort so the winning request handles all side
     // effects, the router resolves this code idempotently.
     if (updatedRecipientCount === 0) {
+      if (isPhoneSigner) {
+        const currentRecipient = await tx.recipient.findUnique({
+          where: { id: recipient.id },
+          select: { signingStatus: true },
+        });
+
+        if (currentRecipient?.signingStatus !== SigningStatus.SIGNED) {
+          throw new AppError(AppErrorCode.INVALID_REQUEST, {
+            message: 'Recipient identity changed while completing the document',
+            statusCode: 400,
+          });
+        }
+      }
+
       throw new AppError(AppErrorCode.RECIPIENT_ALREADY_SIGNED, {
         message: `Recipient ${recipient.id} has already signed`,
         statusCode: 400,
@@ -395,6 +433,7 @@ export const completeDocumentWithToken = async ({
         requestMetadata,
         data: {
           recipientEmail: recipientEmail,
+          ...(isPhoneSigner && recipient.phone ? { recipientPhone: recipient.phone } : {}),
           recipientName: recipientName,
           recipientId: recipient.id,
           recipientRole: recipient.role,
@@ -431,6 +470,7 @@ export const completeDocumentWithToken = async ({
       signingStatus: true,
       name: true,
       email: true,
+      identityType: true,
       role: true,
     },
     where: {
@@ -477,7 +517,8 @@ export const completeDocumentWithToken = async ({
         const canDictateNextSigner =
           Boolean(dictatedNextSigner) &&
           Boolean(envelope.documentMeta?.allowDictateNextSigner) &&
-          nextRecipients.length === 1;
+          nextRecipients.length === 1 &&
+          nextRecipients[0].identityType !== 'PHONE';
 
         if (canDictateNextSigner && dictatedNextSigner) {
           await prisma.$transaction(async (tx) => {

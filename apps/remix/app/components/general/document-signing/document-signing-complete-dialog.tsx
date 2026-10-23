@@ -44,7 +44,12 @@ export type DocumentSigningCompleteDialogProps = {
     accessAuthOptions?: TRecipientAccessAuth,
     directRecipient?: { name: string; email: string },
   ) => void | Promise<void>;
-  recipient: Pick<Recipient, 'name' | 'email' | 'role' | 'token'>;
+  recipient: Pick<Recipient, 'name' | 'email' | 'role' | 'token'> & {
+    identityType?: 'EMAIL' | 'PHONE';
+    phone?: string | null;
+  };
+  /** Capability computed on the server from the instance flag and document restrictions. */
+  phoneSigningEnabled?: boolean;
   disabled?: boolean;
   allowDictateNextSigner?: boolean;
   defaultNextSigner?: {
@@ -87,6 +92,7 @@ export const DocumentSigningCompleteDialog = ({
   fieldsValidated,
   onSignatureComplete,
   recipient,
+  phoneSigningEnabled = false,
   disabled = false,
   allowDictateNextSigner = false,
   recipientPayload,
@@ -106,11 +112,25 @@ export const DocumentSigningCompleteDialog = ({
   const [showTwoFactorForm, setShowTwoFactorForm] = useState(false);
   const [twoFactorValidationError, setTwoFactorValidationError] = useState<string | null>(null);
 
-  const { derivedRecipientAccessAuth } = useRequiredDocumentSigningAuthContext();
+  const { derivedRecipientAccessAuth, derivedRecipientActionAuth, isDirectTemplate } =
+    useRequiredDocumentSigningAuthContext();
 
   const { isNameLocked, isEmailLocked } = useEmbedSigningContext() || {};
 
-  const canDictateNextSigner = allowDictateNextSigner && Boolean(defaultNextSigner);
+  const isPhoneIdentity = recipient.identityType === 'PHONE';
+  const isPhoneSigningAllowed =
+    phoneSigningEnabled &&
+    isPhoneIdentity &&
+    recipient.role === RecipientRole.SIGNER &&
+    Boolean(recipient.name.trim()) &&
+    /^\+[1-9]\d{1,14}$/.test(recipient.phone ?? '') &&
+    !recipient.email.trim() &&
+    !isDirectTemplate &&
+    !allowDictateNextSigner &&
+    derivedRecipientAccessAuth.length === 0 &&
+    derivedRecipientActionAuth.length === 0;
+
+  const canDictateNextSigner = !isPhoneIdentity && allowDictateNextSigner && Boolean(defaultNextSigner);
 
   const form = useForm<TNextSignerFormSchema>({
     resolver: canDictateNextSigner ? zodResolver(ZNextSignerFormSchema) : undefined,
@@ -153,9 +173,15 @@ export const DocumentSigningCompleteDialog = ({
 
   const onFormSubmit = async (data: TNextSignerFormSchema) => {
     try {
+      if (isPhoneIdentity && !isPhoneSigningAllowed) {
+        throw new AppError(AppErrorCode.INVALID_REQUEST, {
+          message: 'Phone signing is not available for this document',
+        });
+      }
+
       let recipientOverridePayload: { name: string; email: string } | undefined;
 
-      if (recipientPayload && !recipientPayload.email) {
+      if (!isPhoneIdentity && recipientPayload && !recipientPayload.email) {
         const isFormValid = await recipientForm.trigger();
 
         if (!isFormValid) {
@@ -163,7 +189,7 @@ export const DocumentSigningCompleteDialog = ({
         }
 
         recipientOverridePayload = recipientForm.getValues();
-      } else if (recipientPayload && recipientPayload.email && !recipient.email) {
+      } else if (!isPhoneIdentity && recipientPayload && recipientPayload.email && !recipient.email) {
         // Form is hidden because we have an email (e.g. from embed context),
         // but the DB recipient doesn't have one yet — send the override.
         recipientOverridePayload = recipientPayload;
@@ -176,7 +202,7 @@ export const DocumentSigningCompleteDialog = ({
       }
 
       const nextSigner =
-        allowDictateNextSigner && data.name && data.email ? { name: data.name, email: data.email } : undefined;
+        canDictateNextSigner && data.name && data.email ? { name: data.name, email: data.email } : undefined;
 
       await onSignatureComplete(nextSigner, data.accessAuthOptions, recipientOverridePayload);
     } catch (error) {
@@ -279,6 +305,18 @@ export const DocumentSigningCompleteDialog = ({
           <p className="font-medium text-muted-foreground text-sm">{documentTitle}</p>
         </div>
 
+        {isPhoneIdentity && (
+          <div className="rounded-lg border border-border p-4 text-sm">
+            <p className="font-medium">{recipient.name}</p>
+            <p className="mt-1 text-muted-foreground">{recipient.phone}</p>
+            {!isPhoneSigningAllowed && (
+              <p role="alert" className="mt-2 text-destructive">
+                <Trans>Phone signing is not available for this document. Contact the sender.</Trans>
+              </p>
+            )}
+          </div>
+        )}
+
         {match({ hasChildren: Boolean(children), showTwoFactorForm })
           .with({ hasChildren: true }, () => children)
           .with({ showTwoFactorForm: true }, () => (
@@ -290,7 +328,7 @@ export const DocumentSigningCompleteDialog = ({
           ))
           .otherwise(() => (
             <fieldset disabled={form.formState.isSubmitting} className="border-none p-0">
-              {recipientPayload && !recipientPayload.email && (
+              {!isPhoneIdentity && recipientPayload && !recipientPayload.email && (
                 <Form {...recipientForm}>
                   <div className="mb-4 flex flex-col gap-4">
                     <div className="flex flex-col gap-4 md:flex-row">
@@ -400,7 +438,11 @@ export const DocumentSigningCompleteDialog = ({
                       <Trans>Cancel</Trans>
                     </Button>
 
-                    <Button type="submit" disabled={!isComplete} loading={form.formState.isSubmitting}>
+                    <Button
+                      type="submit"
+                      disabled={!isComplete || (isPhoneIdentity && !isPhoneSigningAllowed)}
+                      loading={form.formState.isSubmitting}
+                    >
                       {match(recipient.role)
                         .with(RecipientRole.VIEWER, () => <Trans>Mark as Viewed</Trans>)
                         .with(RecipientRole.SIGNER, () => <Trans>Sign</Trans>)

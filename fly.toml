@@ -1,0 +1,35 @@
+app = "reylo-documenso-staging"
+primary_region = "fra"
+
+[build]
+  dockerfile = "docker/Dockerfile"
+
+[env]
+  NODE_ENV = "production"
+  PORT = "3000"
+  NEXT_PUBLIC_WEBAPP_URL = "https://sign.staging.reylo.fr"
+  NEXT_PRIVATE_INTERNAL_WEBAPP_URL = "https://sign.staging.reylo.fr"
+  KEYLO_PHONE_SIGNING_ENABLED = "true"
+  NEXT_PUBLIC_UPLOAD_TRANSPORT = "s3"
+  NEXT_PRIVATE_UPLOAD_BUCKET = "reylo-documenso-staging"
+  NEXT_PRIVATE_UPLOAD_FORCE_PATH_STYLE = "false"
+  NEXT_PRIVATE_SIGNING_TRANSPORT = "local"
+
+[http_service]
+  internal_port = 3000
+  force_https = true
+  auto_stop_machines = "stop"
+  auto_start_machines = true
+  min_machines_running = 1
+  processes = ["app"]
+
+  [[http_service.checks]]
+    interval = "15s"
+    timeout = "5s"
+    grace_period = "60s"
+    method = "GET"
+    path = "/api/health"
+
+[[vm]]
+  size = "shared-cpu-1x"
+  memory = "1gb"
