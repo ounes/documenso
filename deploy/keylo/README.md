@@ -45,7 +45,7 @@ Requirements:
 - S3-compatible storage (or database storage for a small staging instance).
 - SMTP with a verified sending domain.
 - A signing certificate (`.p12`) mounted as a secret.
-- HTTPS on `sign.staging.keylo.fr`.
+- HTTPS on `sign.staging.reylo.fr`.
 - The webhook URL must be reachable from Documenso:
   `https://api.staging.reylo.fr/api/signatures/webhook`.
 
@@ -53,7 +53,7 @@ On the Reylo API:
 
 ```dotenv
 SIGNATURE_PROVIDER=documenso
-DOCUMENSO_URL=https://sign.staging.keylo.fr
+DOCUMENSO_URL=https://sign.staging.reylo.fr
 DOCUMENSO_API_KEY=<staging token>
 DOCUMENSO_WEBHOOK_SECRET=<staging secret>
 ```
