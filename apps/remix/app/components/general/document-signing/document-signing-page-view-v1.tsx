@@ -59,6 +59,7 @@ export type DocumentSigningPageViewV1Props = {
   fields: Field[];
   completedFields: CompletedField[];
   isRecipientsTurn: boolean;
+  phoneSigningEnabled: boolean;
   allRecipients?: RecipientWithFields[];
   /**
    * The dictatable next recipient, computed server-side over the FULL
@@ -76,6 +77,7 @@ export const DocumentSigningPageViewV1 = ({
   fields,
   completedFields,
   isRecipientsTurn,
+  phoneSigningEnabled,
   allRecipients = [],
   nextRecipient,
   includeSenderDetails,
@@ -297,6 +299,7 @@ export const DocumentSigningPageViewV1 = ({
                           disabled={!isRecipientsTurn}
                           onSignatureComplete={async (nextSigner) => completeDocument({ nextSigner })}
                           recipient={recipient}
+                          phoneSigningEnabled={phoneSigningEnabled}
                           allowDictateNextSigner={nextRecipient && documentMeta?.allowDictateNextSigner}
                           defaultNextSigner={
                             nextRecipient ? { name: nextRecipient.name, email: nextRecipient.email } : undefined
@@ -350,6 +353,7 @@ export const DocumentSigningPageViewV1 = ({
                   isSubmitting={isSubmitting}
                   fieldsValidated={fieldsValidated}
                   nextRecipient={nextRecipient}
+                  phoneSigningEnabled={phoneSigningEnabled}
                 />
               </div>
             </div>

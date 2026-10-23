@@ -18,7 +18,10 @@ import { zfd } from 'zod-form-data';
 import { zfdFile, zodFormData } from '../../utils/zod-form-data';
 import { ZDocumentExternalIdSchema, ZDocumentTitleSchema, ZDocumentVisibilitySchema } from '../document-router/schema';
 import type { TrpcRouteMeta } from '../trpc';
-import { ZCreateEnvelopeRecipientSchema } from './envelope-recipients/create-envelope-recipients.types';
+import {
+  refineCreateEnvelopeRecipient,
+  ZCreateEnvelopeRecipientBaseSchema,
+} from './envelope-recipients/create-envelope-recipients.types';
 
 export const createEnvelopeMeta: TrpcRouteMeta = {
   openapi: {
@@ -48,7 +51,7 @@ export const ZCreateEnvelopePayloadSchema = z.object({
     .optional(),
   recipients: z
     .array(
-      ZCreateEnvelopeRecipientSchema.extend({
+      ZCreateEnvelopeRecipientBaseSchema.extend({
         fields: ZEnvelopeFieldAndMetaSchema.and(
           z.object({
             identifier: z
@@ -64,7 +67,7 @@ export const ZCreateEnvelopePayloadSchema = z.object({
         )
           .array()
           .optional(),
-      }),
+      }).superRefine(refineCreateEnvelopeRecipient),
     )
     .optional(),
   meta: ZDocumentMetaCreateSchema.optional(),

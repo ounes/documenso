@@ -342,7 +342,11 @@ export const sendDocument = async ({ id, userId, teamId, sendEmail, requestMetad
   if (sendEmail || (isRecipientSigningRequestEmailEnabled && sendEmail === undefined)) {
     await Promise.all(
       recipientsToNotify.map(async (recipient) => {
-        if (recipient.sendStatus === SendStatus.SENT || recipient.role === RecipientRole.CC) {
+        if (
+          recipient.sendStatus === SendStatus.SENT ||
+          recipient.role === RecipientRole.CC ||
+          !isRecipientEmailValidForSending(recipient)
+        ) {
           return;
         }
 

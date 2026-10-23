@@ -6,9 +6,7 @@ import { fieldsContainUnsignedRequiredField } from '@documenso/lib/utils/advance
 import { createDocumentAuditLogData } from '@documenso/lib/utils/document-audit-logs';
 import { prisma } from '@documenso/prisma';
 import {
-  DocumentDistributionMethod,
   DocumentSigningOrder,
-  DocumentSource,
   DocumentStatus,
   EnvelopeType,
   FieldType,
@@ -34,6 +32,7 @@ import { getIsRecipientsTurnToSign } from '../recipient/get-is-recipient-turn';
 import { assertSenderNotDisabled } from '../user/assert-user-not-disabled';
 import { triggerWebhook } from '../webhooks/trigger/trigger-webhook';
 import { isRecipientAuthorized } from './is-recipient-authorized';
+import { isPhoneSigningAllowedForRecipient } from './phone-signing';
 
 export type CompleteDocumentWithTokenOptions = {
   token: string;
@@ -165,22 +164,7 @@ export const completeDocumentWithToken = async ({
 
   if (
     isPhoneSigner &&
-    (process.env.REYLO_PHONE_SIGNING_ENABLED !== 'true' ||
-      envelope.type !== EnvelopeType.DOCUMENT ||
-      envelope.source !== DocumentSource.DOCUMENT ||
-      envelope.templateId !== null ||
-      envelope.signatureLevel !== 'SES' ||
-      envelope.documentMeta?.distributionMethod !== DocumentDistributionMethod.NONE ||
-      envelope.documentMeta.allowDictateNextSigner ||
-      recipient.role !== RecipientRole.SIGNER ||
-      !recipient.name.trim() ||
-      !recipient.phone ||
-      !/^\+[1-9]\d{1,14}$/.test(recipient.phone) ||
-      recipient.email.trim() !== '' ||
-      documentAuthOption.globalAccessAuth.length > 0 ||
-      documentAuthOption.globalActionAuth.length > 0 ||
-      recipientAuthOption.accessAuth.length > 0 ||
-      recipientAuthOption.actionAuth.length > 0 ||
+    (!isPhoneSigningAllowedForRecipient({ envelope, recipient }) ||
       recipientOverride !== undefined ||
       dictatedNextSigner !== undefined)
   ) {

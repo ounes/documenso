@@ -5,7 +5,7 @@ import { nanoid } from '@documenso/lib/universal/id';
 import { createDocumentAuditLogData } from '@documenso/lib/utils/document-audit-logs';
 import { createRecipientAuthOptions } from '@documenso/lib/utils/document-auth';
 import { prisma } from '@documenso/prisma';
-import { EnvelopeType, RecipientRole, SendStatus, SigningStatus } from '@prisma/client';
+import { EnvelopeType, IdentityType, RecipientRole, SendStatus, SigningStatus } from '@prisma/client';
 
 import { AppError, AppErrorCode } from '../../errors/app-error';
 import type { EnvelopeIdOptions } from '../../utils/envelope';
@@ -22,6 +22,8 @@ export interface CreateEnvelopeRecipientsOptions {
   id: EnvelopeIdOptions;
   recipients: {
     email: string;
+    identityType?: IdentityType;
+    phone?: string | null;
     name: string;
     role: RecipientRole;
     signingOrder?: number | null;
@@ -130,6 +132,8 @@ export const createEnvelopeRecipients = async ({
             envelopeId: envelope.id,
             name: recipient.name,
             email: recipient.email,
+            identityType: recipient.identityType ?? IdentityType.EMAIL,
+            phone: recipient.phone ?? null,
             role: recipient.role,
             signingOrder: recipient.signingOrder,
             token: nanoid(),
@@ -148,6 +152,9 @@ export const createEnvelopeRecipients = async ({
               metadata: requestMetadata,
               data: {
                 recipientEmail: createdRecipient.email,
+                ...(createdRecipient.identityType === IdentityType.PHONE && createdRecipient.phone
+                  ? { recipientPhone: createdRecipient.phone }
+                  : {}),
                 recipientName: createdRecipient.name,
                 recipientId: createdRecipient.id,
                 recipientRole: createdRecipient.role,
