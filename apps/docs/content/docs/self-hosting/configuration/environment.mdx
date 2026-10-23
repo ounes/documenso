@@ -101,6 +101,19 @@ internal hosts, for example when delivering to a service on your own network:
 NEXT_PRIVATE_WEBHOOK_SSRF_BYPASS_HOSTS="hooks.internal.example,10.0.0.5"
 ```
 
+### Phone signing
+
+| Variable                      | Default | Description                                                                 |
+| ----------------------------- | ------- | --------------------------------------------------------------------------- |
+| `KEYLO_PHONE_SIGNING_ENABLED` | `false` | Enables phone-only signing without OTP/SMS for recipients with `PHONE` auth |
+
+This is a Keylo-specific feature gate. When set to `true`, a recipient with
+`identityType: "PHONE"` can complete signing through the signing link without
+an OTP or SMS challenge. The signing link must be delivered outside Documenso.
+
+`REYLO_PHONE_SIGNING_ENABLED` is accepted as a deprecated fallback for
+backward compatibility. New deployments should use `KEYLO_PHONE_SIGNING_ENABLED`.
+
 ---
 
 ## Email Configuration

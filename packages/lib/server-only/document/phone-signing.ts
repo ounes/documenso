@@ -25,7 +25,9 @@ export const isPhoneSigningAllowedForRecipient = ({
   envelope: PhoneSigningEnvelope;
   recipient: PhoneSigningRecipient;
 }): boolean => {
-  if (process.env.REYLO_PHONE_SIGNING_ENABLED !== 'true') {
+  const enabled = process.env.KEYLO_PHONE_SIGNING_ENABLED ?? process.env.REYLO_PHONE_SIGNING_ENABLED;
+
+  if (enabled !== 'true') {
     return false;
   }
 
