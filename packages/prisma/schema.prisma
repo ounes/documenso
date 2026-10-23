@@ -642,12 +642,12 @@ enum RecipientRole {
   ASSISTANT
 }
 
-/// @zod.import(["import { ZRecipientAuthOptionsSchema } from '@documenso/lib/types/document-auth';"])
 enum IdentityType {
   EMAIL
   PHONE
 }
 
+/// @zod.import(["import { ZRecipientAuthOptionsSchema } from '@documenso/lib/types/document-auth';"])
 model Recipient {
   id                   Int           @id @default(autoincrement())
   envelopeId           String
