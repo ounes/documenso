@@ -47,7 +47,7 @@ Requirements:
 - A signing certificate (`.p12`) mounted as a secret.
 - HTTPS on `sign.staging.keylo.fr`.
 - The webhook URL must be reachable from Documenso:
-  `https://api.staging.keylo.fr/api/signatures/webhook`.
+  `https://api.staging.reylo.fr/api/signatures/webhook`.
 
 On the Reylo API:
 
@@ -96,12 +96,28 @@ The Reylo integration currently uses one API token and stores the Reylo
 service should add an explicit application namespace before onboarding a second
 consumer.
 
+## Reylo completion redirect
+
+Reylo sets `meta.redirectUrl` when creating an envelope. After the last
+signature, Documenso redirects the signer to the Reylo page
+`/signature/signed?envelope=<id>&token=<hmac>`. That page is public, branded
+Reylo, and exposes the signed PDF for preview, download and print.
+
+This is an API-level integration: no Documenso source change is required, and
+the redirect URL is stored on the envelope's document metadata. If the URL is
+missing, Documenso falls back to its own completion page.
+
 ## Verification checklist
 
 - `GET /api/health` returns `200`.
-- A test envelope can be created through the Reylo API.
+- A test envelope can be created through the Reylo API with
+  `meta.redirectUrl` pointing to the Reylo web app.
 - The signing link opens in a private browser window.
 - Signing completes and the Reylo webhook returns `200`.
 - The envelope reaches `COMPLETED` and the signed PDF/audit/certificate are
   retrievable.
+- The signer lands on the Reylo completion page, not Documenso's generic
+  completion screen.
+- The signed PDF replaces the original file in Reylo and the old object is
+  removed.
 - The Reylo signature credit is captured exactly once.
